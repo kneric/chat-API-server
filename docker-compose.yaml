@@ -1,0 +1,43 @@
+services:
+  app:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    container_name: chat-server-service
+    environment:
+      NODE_ENV: ${NODE_ENV:-local}
+      SERVER_ADDRESS: ":3000"
+      DATABASE_URL: ${DATABASE_URL:-postgresql://user:password@localhost:5332/mydb?schema=public}
+    env_file:
+      - .env
+    ports:
+      - '3000:3000'
+    depends_on:
+      - postgres-is-ready
+    volumes:
+      - ./src:/app/src
+
+  postgres: &postgres
+    image: postgres:11.4-alpine
+    ports: [ 5332:5432 ]
+    environment:
+      POSTGRES_USER: ${POSTGRES_USER:-user}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-password}
+      POSTGRES_DB: ${POSTGRES_DATABASE:-mydb}
+    volumes:
+      - ./tmp/postgres-data:/var/lib/postgresql/data/
+    restart: on-failure
+    networks: [ "chat_server" ]
+
+  postgres-is-ready: &postgres-is-ready
+    image: wait-for-it
+    build:
+      context: ./
+    command: [ "/wait-for-it.sh", "postgres:5432", "--", "echo", "alive" ]
+    depends_on:
+      - postgres
+    networks: [ "chat_server" ]
+
+networks:
+  chat_server:
+    driver: bridge
