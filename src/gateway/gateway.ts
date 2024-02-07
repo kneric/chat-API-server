@@ -1,11 +1,11 @@
-import { OnModuleInit } from '@nestjs/common';
 import {
+  ConnectedSocket,
   MessageBody,
   SubscribeMessage,
   WebSocketGateway,
   WebSocketServer,
 } from '@nestjs/websockets';
-import { Server } from 'socket.io';
+import { Server, Socket } from 'socket.io';
 
 @WebSocketGateway({
   cors: {
@@ -13,21 +13,22 @@ import { Server } from 'socket.io';
       process.env.NODE_ENV === 'production' ? false : ['http://localhost:3000'],
   },
 })
-export class Gateway implements OnModuleInit {
+export class Gateway {
   @WebSocketServer()
   server: Server;
 
-  onModuleInit(): any {
-    this.server.on('connection', () => {
-      console.log('Server is running on ', process.env.NODE_ENV);
-    });
+  afterInit() {
+    console.log('Server is running on ', process.env.NODE_ENV);
   }
 
   @SubscribeMessage('chatRoom')
-  onNewMessage(@MessageBody() message: any) {
+  onNewMessage(
+    @MessageBody() message: string,
+    @ConnectedSocket() client: Socket,
+  ) {
     const eventName = 'chatMsg';
     this.server.emit(eventName, {
-      // username
+      user: client.id,
       eventName,
       message,
     });

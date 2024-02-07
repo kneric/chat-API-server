@@ -14,8 +14,16 @@ services:
       - '3000:3000'
     depends_on:
       - postgres-is-ready
+      - rabbitmq
     volumes:
       - ./src:/app/src
+
+  rabbitmq:
+    image: rabbitmq:3-management-alpine
+    container_name: rabbitmq
+    ports:
+      - 5672:5672
+      - 15672:15672
 
   postgres: &postgres
     image: postgres:11.4-alpine
